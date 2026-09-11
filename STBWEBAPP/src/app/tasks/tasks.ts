@@ -2,6 +2,7 @@ import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { Taskservice } from '../services/taskservice';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-tasks',
@@ -13,6 +14,9 @@ import { FormsModule } from '@angular/forms';
 export class Tasks implements OnInit {
   tasksData: any[] = [];                 // Stores list of schemes fetched from API
   errorMessage: string | null = null;     // Holds error messages for display
+  pageNumber = 1;
+  pageSize = 4;
+  totalPages = 0;
   // Form model for creating/updating tasks
   taskForm = {
     id: '',
@@ -35,9 +39,10 @@ export class Tasks implements OnInit {
   }
   // Fetch all Tasks from API
   loadtask(): void {
-    this.taskservice.getAll().subscribe({
+    this.taskservice.getAll(this.pageNumber, this.pageSize).subscribe({
       next: data => {
-        this.tasksData = Array.isArray(data) ? data : [];
+        this.tasksData = data?.items ?? data?.Items ?? [];
+        this.totalPages = data?.totalPages ?? data?.TotalPages ?? 0;
         this.errorMessage = null;
         this.changeDetectorRef.detectChanges();
       },
@@ -48,16 +53,78 @@ export class Tasks implements OnInit {
       },
     });
   }
+  goToPage(pageNumber: number): void {
+    if (pageNumber < 1 || (this.totalPages > 0 && pageNumber > this.totalPages)) {
+      return;
+    }
+    this.pageNumber = pageNumber;
+    this.loadtask();
+  }
+
+  changePageSize(pageSize: number): void {
+    this.pageSize = Number(pageSize);
+    this.pageNumber = 1;
+    this.loadtask();
+  }
+
+  private toApiDate(value: string): string {
+    if (!value) {
+      return value;
+    }
+
+    return /^\d{4}-\d{2}-\d{2}$/.test(value)
+      ? `${value}T00:00:00.000Z`
+      : value;
+  }
+
+  private isValidDueDate(value: string): boolean {
+    return !value || !Number.isNaN(Date.parse(value));
+  }
+
+  private isValidTaskForm(): boolean {
+
+    return true;
+  }
+
+  private buildTaskPayload() {
+    const payload: Record<string, string> = {
+      id: this.taskForm.id,
+      title: this.taskForm.title,
+      description: this.taskForm.description,
+      assignee: this.taskForm.assignee,
+      status: this.taskForm.status,
+      dueDate: this.toApiDate(this.taskForm.dueDate),
+      sprint: this.taskForm.sprint
+    };
+
+    return Object.fromEntries(
+      Object.entries(payload).filter(([, value]) => value !== '')
+    );
+  }
+
   // Create new task
   saveTask(): void {
-    const newTask = { ...this.taskForm };
-    this.taskservice.create(newTask).subscribe({
+    if (!this.isValidTaskForm()) {
+      return;
+    }
+    if (!this.isValidDueDate(this.taskForm.dueDate)) {
+      this.errorMessage = 'Please enter a valid due date.';
+      return;
+    }
+
+    this.taskservice.create(this.buildTaskPayload()).subscribe({
       next: () => {
         this.loadtask();  // reload list
         this.resetForm();   // reset form after save
+        void Swal.fire({
+          icon: 'success',
+          title: 'Task saved',
+          text: 'The task was saved successfully.',
+          confirmButtonText: 'OK'
+        });
       },
       error: err => {
-        this.errorMessage = 'Failed to create task';
+        this.errorMessage = err?.error?.title ?? err?.error?.message ?? 'Failed to create task';
         console.error(err);
       }
     });
@@ -105,14 +172,26 @@ export class Tasks implements OnInit {
       this.errorMessage = 'No task selected for update';
       return;
     }
-    const updated = { ...this.taskForm };
-    this.taskservice.update(this.editingId, updated).subscribe({
+    if (!this.isValidTaskForm()) {
+      return;
+    }
+    if (!this.isValidDueDate(this.taskForm.dueDate)) {
+      this.errorMessage = 'Please enter a valid due date.';
+      return;
+    }
+    this.taskservice.update(this.editingId, this.buildTaskPayload()).subscribe({
       next: () => {
         this.loadtask();  // reload list
         this.resetForm();   // reset form after update
+        void Swal.fire({
+          icon: 'success',
+          title: 'Task updated',
+          text: 'The task was updated successfully.',
+          confirmButtonText: 'OK'
+        });
       },
       error: err => {
-        this.errorMessage = `Failed to update task with id ${this.editingId}`;
+        this.errorMessage = err?.error?.title ?? err?.error?.message ?? `Failed to update task with id ${this.editingId}`;
         console.error(err);
       }
     });
@@ -120,7 +199,15 @@ export class Tasks implements OnInit {
   // Delete task by ID
   deleteTask(id: number): void {
     this.taskservice.delete(id).subscribe({
-      next: () => this.loadtask(), // reload list after delete
+      next: () => {
+        this.loadtask(); // reload list after delete
+        void Swal.fire({
+          icon: 'success',
+          title: 'Task deleted',
+          text: 'The task was deleted successfully.',
+          confirmButtonText: 'OK'
+        });
+      },
       error: err => {
         this.errorMessage = `Failed to delete task with id ${id}`;
         console.error(err);

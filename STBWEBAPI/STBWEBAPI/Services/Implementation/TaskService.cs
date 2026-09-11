@@ -15,11 +15,11 @@ namespace STBWEBAPI.Services.Implementation
         {
             _uow = uow;
             _mapper = mapper;
-        }
+        }    
 
-        public async Task<IEnumerable<TaskItem>> GetAllTasksAsync()
+        public async Task<PagedResult<TaskItem>> GetAllTasksAsync(int pageNumber, int pageSize)
         {
-            return await _uow.Tasks.GetAllTasksAsync();
+            return await _uow.Tasks.GetAllTasksAsync(pageNumber, pageSize);
         }
 
         public async Task<TaskItem> GetTaskByIdAsync(int id)
@@ -58,5 +58,4 @@ namespace STBWEBAPI.Services.Implementation
             return deleted;
         }
     }
-
 }

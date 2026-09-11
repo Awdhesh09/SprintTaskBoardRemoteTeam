@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using STBWEBAPI.Data;
 using STBWEBAPI.Models;
 using STBWEBAPI.Repositories.Interface;
+using STBWEBAPI.DTOs;
 using System.Data;
 
 namespace STBWEBAPI.Repositories.Implementation
@@ -16,11 +17,26 @@ namespace STBWEBAPI.Repositories.Implementation
             _context = context;
         }
 
-        // Get All Tasks
-        public async Task<IEnumerable<TaskItem>> GetAllTasksAsync()
+      
+        // Get All Tasks - paged
+        public async Task<PagedResult<TaskItem>> GetAllTasksAsync(int pageNumber, int pageSize)
         {
             using var conn = _context.CreateConnection();
-            return await conn.QueryAsync<TaskItem>("GetTasks", commandType: CommandType.StoredProcedure);
+            var parameters = new DynamicParameters();
+            parameters.Add("@PageNumber", pageNumber);
+            parameters.Add("@PageSize", pageSize);            
+            using var multi = await conn.QueryMultipleAsync("GetTasks", parameters, commandType: CommandType.StoredProcedure);
+            var items = (await multi.ReadAsync<TaskItem>()).ToList();
+            var total = await multi.ReadFirstOrDefaultAsync<int>();
+            var result = new PagedResult<TaskItem>
+            {
+                Items = items,
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalCount = total,
+                TotalPages = (int)Math.Ceiling(total / (double)pageSize)
+            };
+            return result;
         }
 
         // Get Task By Id
@@ -43,7 +59,7 @@ namespace STBWEBAPI.Repositories.Implementation
             parameters.Add("@Status", task.Status);
             parameters.Add("@DueDate", task.DueDate);
             parameters.Add("@Sprint", task.Sprint);
-            await conn.ExecuteAsync("InsertTask",parameters,commandType: CommandType.StoredProcedure);
+            await conn.ExecuteAsync("InsertTask", parameters, commandType: CommandType.StoredProcedure);
             return task;
         }
 
@@ -59,7 +75,7 @@ namespace STBWEBAPI.Repositories.Implementation
             parameters.Add("@Status", task.Status);
             parameters.Add("@DueDate", task.DueDate);
             parameters.Add("@Sprint", task.Sprint);
-            await conn.ExecuteAsync("UpdateTask",parameters,commandType: CommandType.StoredProcedure);
+            await conn.ExecuteAsync("UpdateTask", parameters, commandType: CommandType.StoredProcedure);
             return task;
         }
 
