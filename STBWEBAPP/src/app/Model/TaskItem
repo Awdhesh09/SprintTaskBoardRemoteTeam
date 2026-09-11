@@ -1,0 +1,37 @@
+export interface TaskItem {
+  id: number;
+  title: string;
+  description?: string;
+  assignee?: string;
+  status: string;
+  dueDate?: Date;
+  sprint?: string;
+  createdAt: Date;
+  completedAt?: Date;
+}
+
+export class TaskItemModel implements TaskItem {
+  id: number;
+  title: string;
+  description?: string;
+  assignee?: string;
+  status: string;
+  dueDate?: Date;
+  sprint?: string;
+  createdAt: Date;
+  completedAt?: Date;
+
+  // Constructor accepts partial data and fills defaults
+  constructor(data: Partial<TaskItem> = {}) {
+    this.id = data.id ?? 0;                           // Default ID = 0
+    this.title = data.title ?? '';                      // Default title = empty string
+    this.description = data.description;              // Optional
+    this.assignee = data.assignee;                    // Optional
+    this.status = data.status ?? '';                  // Default status = empty string
+    this.dueDate = data.dueDate;                      // Optional
+    this.sprint = data.sprint;                        // Optional
+    this.createdAt = data.createdAt ?? new Date();    // Default createdAt = current date/time
+    this.completedAt = data.completedAt;                // Optional   
+    // Default createdAt = current date/time in ISO format
+  }
+}

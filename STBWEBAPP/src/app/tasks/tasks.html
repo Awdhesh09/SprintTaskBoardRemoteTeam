@@ -1,0 +1,103 @@
+<div class="container-fluid mt-4">
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title text-center">
+        {{ editingId ? 'Edit Task' : 'Add New Task' }}
+      </h2>
+    </div>
+    <div class="card-body">
+      <form (ngSubmit)="editingId ? updateTask() : saveTask()" #taskFormRef="ngForm">
+        <div class="row g-3 align-items-center">
+          <div class="row">
+            <div class="col-md-6">
+              <label for="title" class="form-label">Title</label>
+              <input id="title" name="title" class="form-control" required [(ngModel)]="taskForm.title" />
+            </div>
+            <div class="col-md-6">
+              <label for="assignee" class="form-label">Assignee</label>
+              <input id="assignee" name="assignee" class="form-control" [(ngModel)]="taskForm.assignee" />
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-6">
+              <label for="status" class="form-label">Status</label>
+              <input id="status" name="status" class="form-control" required [(ngModel)]="taskForm.status" />
+            </div>
+            <div class="col-md-6">
+              <label for="dueDate" class="form-label">Due Date</label>
+              <input id="dueDate" name="dueDate" type="date" class="form-control" [(ngModel)]="taskForm.dueDate" />
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-6">
+              <label for="sprint" class="form-label">Sprint</label>
+              <input id="sprint" name="sprint" class="form-control" [(ngModel)]="taskForm.sprint" />
+            </div>
+            <div class="col-md-6">
+              <label for="description" class="form-label">Description</label>
+              <textarea id="description" name="description" class="form-control" rows="2" [(ngModel)]="taskForm.description"></textarea>
+            </div>
+          </div>
+          <div class="row text-center">
+            <div class="col-12 mt-1">
+              <button type="submit" class="btn btn-primary" [disabled]="taskFormRef.invalid">
+                {{ editingId ? 'Update' : 'Save' }}
+              </button>
+              <button type="button" class="btn btn-secondary ms-2" (click)="resetForm()">Reset</button>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="container-fluid mt-4">
+  <div *ngIf="errorMessage" class="alert alert-danger">
+    {{ errorMessage }}
+  </div>
+  <div class="table-responsive">
+    <table class="table table-bordered">
+      <thead class="table-dark">
+        <tr>
+          <th class="text-center">ID</th>
+          <th class="text-center">Title</th>
+          <th class="text-center">Description</th>
+          <th class="text-center">Assignee</th>
+          <th class="text-center">Status</th>
+          <th class="text-center">Due Date</th>
+          <th class="text-center">Sprint</th>
+          <th class="text-center">Created At</th>
+          <th class="text-center">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let task of tasksData; let i = index">
+          <td class="text-center">{{ task.id }}</td>
+          <td>{{ task.title }}</td>
+          <td>{{ task.description }}</td>
+          <td>{{ task.assignee }}</td>
+          <td class="text-center">  
+            <span [ngClass]="{
+              'badge bg-secondary': task.status === 'Not Started',
+              'badge bg-info': task.status === 'In Progress',
+              'badge bg-warning': task.status === 'Blocked',
+              'badge bg-success': task.status === 'Done'
+                }">
+              {{ task.status }}
+            </span>
+         </td>
+          <td class="text-end">{{ task.dueDate | date:'yyyy-MM-dd' }}</td>
+          <td class="text-center">{{ task.sprint }}</td>
+          <td class="text-end">{{ task.createdAt | date:'yyyy-MM-dd' }}</td>
+          <td class="text-center">
+            <button class="btn btn-sm btn-primary" (click)="editTask(task)">Edit</button>
+            <button class="btn btn-sm btn-danger" (click)="deleteTask(task.id)">Delete</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
